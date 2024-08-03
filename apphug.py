@@ -14,9 +14,12 @@ import imageio
 import numpy as np
 import gradio as gr
 from PIL import Image
-from subprocess import PIPE, run
 import json
 import os
+import sys
+
+# Add the path to sys.path to correctly import MagicAnimate
+sys.path.append('/kaggle/working/MagicAnimate-hf')
 
 from demo.animate import MagicAnimate
 from huggingface_hub import snapshot_download
@@ -71,20 +74,21 @@ with gr.Blocks() as demo:
         </h2>
         </div>
         """)
+    
     animation = gr.Video(format="mp4", label="Animation Results", autoplay=True)
     
     with gr.Row():
-        reference_image  = gr.Image(label="Reference Image")
-        motion_sequence  = gr.Video(format="mp4", label="Motion Sequence")
+        reference_image = gr.Image(label="Reference Image")
+        motion_sequence = gr.Video(format="mp4", label="Motion Sequence")
         
         with gr.Column():
-            random_seed         = gr.Textbox(label="Random seed", value=1, info="default: -1")
-            sampling_steps      = gr.Textbox(label="Sampling steps", value=25, info="default: 25")
-            guidance_scale      = gr.Textbox(label="Guidance scale", value=7.5, info="default: 7.5")
-            submit              = gr.Button("Animate")
+            random_seed = gr.Textbox(label="Random seed", value=1, info="default: -1")
+            sampling_steps = gr.Textbox(label="Sampling steps", value=25, info="default: 25")
+            guidance_scale = gr.Textbox(label="Guidance scale", value=7.5, info="default: 7.5")
+            submit = gr.Button("Animate")
 
     def read_video(video):
-        #size = int(size) (thanks to Van-wise ❤)
+        # Ensure video has the expected fps
         reader = imageio.get_reader(video)
         fps = reader.get_meta_data()['fps']
         assert fps == 25.0, f'Expected video fps: 25, but {fps} fps found'
@@ -93,19 +97,19 @@ with gr.Blocks() as demo:
     def read_image(image, size=512):
         return np.array(Image.fromarray(image).resize((size, size)))
     
-    # when user uploads a new video
+    # When user uploads a new video
     motion_sequence.upload(
         read_video,
         motion_sequence,
         motion_sequence
     )
-    # when `first_frame` is updated
+    # When `reference_image` is updated
     reference_image.upload(
         read_image,
         reference_image,
         reference_image
     )
-    # when the `submit` button is clicked
+    # When the `submit` button is clicked
     submit.click(
         animate,
         [reference_image, motion_sequence, random_seed, sampling_steps, guidance_scale], 
